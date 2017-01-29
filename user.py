@@ -37,7 +37,7 @@ class C224eUser:
     def login(self, user, password, host):
         self.address = host
 
-        self.br = RoboBrowser(history=True,parser='html.parser')
+        self.br = RoboBrowser(history=True,parser='lxml')
         self.br.allow_redirects = True
         self.br.open('http://'+self.address+'/wcd/top.html')
 
@@ -90,6 +90,29 @@ class C224eUser:
         limits['cCount'] = colorCounter
 
         return limits
+
+    def systemCounters(self):
+        if(not self.loggedIn):
+            return
+        self.br.open('http://' + self.address + '/wcd/system_counter.xml')
+
+        def getSectionCounter(section, name):
+            for result in self.br.find_all(section):
+                if result.find(text=name):
+                    return [name, result.find(text=name).parent.next_sibling.get_text()]
+            return name, -1
+
+        sections = ['copycounter', 'printcounter']
+        counters = ['BwTotal', 'MonoColorTotal', 'BiColorTotal', 'FullColorTotal']
+
+        output = dict()
+
+        for section in sections:
+            output[section] = []
+            for counter in counters:
+                output[section].append(getSectionCounter(section, counter))
+
+        return output
 
     def logout(self):
         if not self.loggedIn:
